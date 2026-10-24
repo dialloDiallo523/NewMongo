@@ -1,13 +1,13 @@
  import React, { useState, useEffect } from "react";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://newmongo.onrender.com/api";
 
 function App() {
   const [liste, setListe] = useState([]);
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
+  const [loading, setLoading] = useState(false); // <--- Ajout d'un état de chargement
 
-  // Charger automatiquement les utilisateurs au démarrage
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -18,9 +18,7 @@ function App() {
 
     try {
       const response = await fetch(`${API_URL}/utilisateurs`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erreur de récupération");
       const data = await response.json();
@@ -30,7 +28,6 @@ function App() {
     }
   };
 
-  // Connexion / Ajout automatique (Génère et stocke le JWT)
   const addListe = async (e) => {
     e.preventDefault();
     if (!nom || !prenom) {
@@ -39,6 +36,7 @@ function App() {
     }
 
     const newUser = { nom, prenom };
+    setLoading(true); // <--- Active le chargement
 
     try {
       const response = await fetch(`${API_URL}/login`, {
@@ -50,34 +48,28 @@ function App() {
       if (!response.ok) throw new Error("Erreur de connexion");
       
       const data = await response.json();
-      
-      // Stockage du token JWT
       localStorage.setItem("token", data.token);
-
-      // Rechargement de la liste des utilisateurs depuis le serveur
       await fetchUsers();
       
       setNom("");
       setPrenom("");
     } catch (err) {
       console.log("Error", err);
+      alert("Erreur de connexion au serveur (patientez si le serveur redémarre).");
+    } finally {
+      setLoading(false); // <--- Désactive le chargement dans tous les cas
     }
   };
 
-  // Supprimer un utilisateur (Sécurisé par le JWT)
   const deleteListe = async (id) => {
     const token = localStorage.getItem("token");
     try {
       const response = await fetch(`${API_URL}/utilisateurs/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: { "Authorization": `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Erreur lors de la suppression");
-      
-      // Mise à jour de l'état local avec l'ID MongoDB (_id)
       setListe(liste.filter((i) => i._id !== id));
     } catch (err) {
       console.log("Error", err);
@@ -103,9 +95,16 @@ function App() {
           onChange={(e) => setPrenom(e.target.value)}
           style={{ marginRight: "10px", padding: "5px" }}
         />
-        <input type="submit" value="Ajouter / Se connecter" style={{ padding: "5px 10px" }} />
+        <input 
+          type="submit" 
+          value={loading ? "Chargement..." : "Ajouter / Se connecter"} 
+          disabled={loading}
+          style={{ padding: "5px 10px", cursor: loading ? "not-allowed" : "pointer" }} 
+        />
       </form>
-      
+
+      {loading && <p style={{ color: "blue" }}>Connexion au serveur en cours (veuillez patienter si le serveur sort de veille)...</p>}
+
       <ul>
         {liste.map((i) => (
           <li key={i._id} style={{ margin: "8px 0" }}>
