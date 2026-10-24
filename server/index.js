@@ -80,6 +80,15 @@ app.post("/api/login", async (req, res) => {
 });
 
 // Obtenir tous les utilisateurs (PROTÉGÉ par JWT)
+// Si vous voulez renvoyer du texte simple :
+app.get('/', (req, res) => {
+    res.send('Mon API fonctionne avec succès !');
+});
+
+// OU si vous préférez renvoyer du JSON (recommandé pour une API) :
+app.get('/', (req, res) => {
+    res.json({ message: 'Bienvenue sur mon API NewMongo !', status: 'en ligne' });
+});
 app.get("/api/utilisateurs", verifyToken, async (req, res) => {
     try {
         const users = await User.find();
